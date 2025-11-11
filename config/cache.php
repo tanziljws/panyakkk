@@ -92,6 +92,12 @@ return [
             'driver' => 'octane',
         ],
 
+        // Query cache store for frequently accessed data
+        'query' => [
+            'driver' => 'file',
+            'path' => storage_path('framework/cache/data/query'),
+        ],
+
     ],
 
     /*

@@ -66,10 +66,11 @@
                     </button>
                 </div>
                 <div class="gallery-image-container" onclick="openModal('imageModal{{ $galeri->id }}')" style="cursor: pointer;">
-                    <img src="{{ asset('images/' . $galeri->gambar) }}" 
+                    <img src="{{ asset('images/' . ($galeri->thumbnail ?? $galeri->gambar)) }}" 
                          class="gallery-image" 
                          alt="{{ $galeri->judul }}"
-                         loading="lazy">
+                         loading="lazy"
+                         data-src="{{ asset('images/' . $galeri->gambar) }}">
                     <div class="image-overlay">
                         <i class="bi bi-zoom-in"></i>
                     </div>
@@ -133,7 +134,7 @@
                     <button type="button" onclick="closeModal('imageModal{{ $galeri->id }}')" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
                 </div>
                 <div class="custom-modal-body">
-                    <img src="{{ asset('images/' . $galeri->gambar) }}" style="width: 100%; max-height: 400px; object-fit: contain; margin-bottom: 15px;" alt="{{ $galeri->judul }}">
+                    <img src="{{ asset('images/' . ($galeri->thumbnail ?? $galeri->gambar)) }}" style="width: 100%; max-height: 400px; object-fit: contain; margin-bottom: 15px;" alt="{{ $galeri->judul }}" loading="lazy">
                     
                     <div style="text-align: center; margin-bottom: 15px;">
                         <button class="btn btn-outline-danger like-btn" data-id="{{ $galeri->id }}" data-liked="{{ Auth::check() && $galeri->isLikedByUser(Auth::id()) ? 'true' : 'false' }}" style="margin: 5px;">

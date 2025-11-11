@@ -9,8 +9,8 @@ class Galeri extends Model
 {
     use HasFactory;
 
-    // IZINKAN FIELD judul, deskripsi, gambar dan category_id untuk mass assignment
-    protected $fillable = ['judul', 'deskripsi', 'gambar', 'category_id'];
+    // IZINKAN FIELD judul, deskripsi, gambar, thumbnail dan category_id untuk mass assignment
+    protected $fillable = ['judul', 'deskripsi', 'gambar', 'thumbnail', 'category_id'];
 
     /**
      * Get the likes for the gallery item.

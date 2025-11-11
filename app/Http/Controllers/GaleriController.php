@@ -11,6 +11,8 @@ use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Laravel\Facades\Image;
+use App\Services\ImageStorageService;
 
 class GaleriController extends Controller
 {
@@ -46,21 +48,48 @@ class GaleriController extends Controller
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
-            $extension = $file->getClientOriginalExtension();
+            $extension = strtolower($file->getClientOriginalExtension());
             
             // Validasi ekstensi file secara manual
             $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+            if (!in_array($extension, $allowedExtensions)) {
                 return back()->withErrors(['gambar' => 'Format file tidak didukung. Gunakan JPG, PNG, atau GIF.']);
             }
             
-            $imageName = time() . '.' . $extension;
-            $file->move(public_path('images'), $imageName);
+            // Generate unique filename
+            $imageName = time() . '_' . uniqid() . '.' . ($extension === 'png' ? 'png' : 'jpg');
+            
+            // Process image with Intervention Image
+            $image = Image::read($file->getRealPath());
+            
+            // Convert PNG to JPEG if not transparent
+            if ($extension === 'png') {
+                // Check if image has transparency
+                if (!$image->isTransparent()) {
+                    $imageName = str_replace('.png', '.jpg', $imageName);
+                    $image->toJpeg(85); // 85% quality
+                } else {
+                    $image->toPng();
+                }
+            } else {
+                // Resize and compress JPEG/GIF
+                $image->scaleDown(1920, 1920)->toJpeg(85);
+            }
+            
+            // Save optimized image
+            $image->save(public_path('images/' . $imageName));
+            
+            // Generate thumbnail
+            $thumbnailName = 'thumb_' . $imageName;
+            $thumbnail = Image::read($file->getRealPath());
+            $thumbnail->cover(400, 400)->toJpeg(80);
+            $thumbnail->save(public_path('images/' . $thumbnailName));
 
             $galeri = Galeri::create([
                 'judul' => $request->judul,
                 'deskripsi' => $request->deskripsi,
                 'gambar' => $imageName,
+                'thumbnail' => $thumbnailName,
                 'category_id' => $request->category_id,
             ]);
 
@@ -101,17 +130,53 @@ class GaleriController extends Controller
 
         if ($request->hasFile('gambar')) {
             $file = $request->file('gambar');
-            $extension = $file->getClientOriginalExtension();
+            $extension = strtolower($file->getClientOriginalExtension());
             
             // Validasi ekstensi file secara manual
             $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+            if (!in_array($extension, $allowedExtensions)) {
                 return back()->withErrors(['gambar' => 'Format file tidak didukung. Gunakan JPG, PNG, atau GIF.']);
             }
             
-            $imageName = time() . '.' . $extension;
-            $file->move(public_path('images'), $imageName);
+            // Generate unique filename
+            $imageName = time() . '_' . uniqid() . '.' . ($extension === 'png' ? 'png' : 'jpg');
+            
+            // Process image with Intervention Image
+            $image = Image::read($file->getRealPath());
+            
+            // Convert PNG to JPEG if not transparent
+            if ($extension === 'png') {
+                // Check if image has transparency
+                if (!$image->isTransparent()) {
+                    $imageName = str_replace('.png', '.jpg', $imageName);
+                    $image->toJpeg(85); // 85% quality
+                } else {
+                    $image->toPng();
+                }
+            } else {
+                // Resize and compress JPEG/GIF
+                $image->scaleDown(1920, 1920)->toJpeg(85);
+            }
+            
+            // Save optimized image
+            $image->save(public_path('images/' . $imageName));
+            
+            // Generate thumbnail
+            $thumbnailName = 'thumb_' . $imageName;
+            $thumbnail = Image::read($file->getRealPath());
+            $thumbnail->cover(400, 400)->toJpeg(80);
+            $thumbnail->save(public_path('images/' . $thumbnailName));
+            
+            // Delete old images if they exist
+            if ($galeri->gambar && file_exists(public_path('images/' . $galeri->gambar))) {
+                unlink(public_path('images/' . $galeri->gambar));
+            }
+            if ($galeri->thumbnail && file_exists(public_path('images/' . $galeri->thumbnail))) {
+                unlink(public_path('images/' . $galeri->thumbnail));
+            }
+            
             $galeri->gambar = $imageName;
+            $galeri->thumbnail = $thumbnailName;
         }
 
         $galeri->save();
