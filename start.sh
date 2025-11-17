@@ -4,6 +4,35 @@
 MAX_RETRIES=10
 RETRY_DELAY=3
 
+echo "Fixing migrations table structure if needed..."
+
+# Fix migrations table structure before running migrations
+# This fixes the issue where id column doesn't have AUTO_INCREMENT
+php artisan db:show 2>/dev/null && php -r "
+try {
+    require __DIR__ . '/vendor/autoload.php';
+    \$app = require_once __DIR__ . '/bootstrap/app.php';
+    \$kernel = \$app->make('Illuminate\Contracts\Console\Kernel');
+    \$kernel->bootstrap();
+    
+    \$db = Illuminate\Support\Facades\DB::connection();
+    \$schema = Illuminate\Support\Facades\Schema::getConnection();
+    
+    if (Illuminate\Support\Facades\Schema::hasTable('migrations')) {
+        \$result = Illuminate\Support\Facades\DB::select(\"SHOW COLUMNS FROM migrations WHERE Field = 'id'\");
+        if (!empty(\$result)) {
+            \$col = \$result[0];
+            if (stripos(\$col->Extra ?? '', 'auto_increment') === false) {
+                Illuminate\Support\Facades\DB::statement('ALTER TABLE migrations MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT');
+                echo 'Fixed migrations table structure' . PHP_EOL;
+            }
+        }
+    }
+} catch (Exception \$e) {
+    // Ignore errors
+}
+" 2>/dev/null || true
+
 echo "Attempting to run database migrations..."
 
 for i in $(seq 1 $MAX_RETRIES); do
