@@ -4,19 +4,17 @@
 MAX_RETRIES=10
 RETRY_DELAY=3
 
-echo "Fixing migrations table structure if needed..."
+echo "=== Starting Laravel Application ==="
+echo "Port: ${PORT:-8080}"
 
 # Fix migrations table structure before running migrations
-# This fixes the issue where id column doesn't have AUTO_INCREMENT
+echo "Fixing migrations table structure if needed..."
 php artisan db:show 2>/dev/null && php -r "
 try {
     require __DIR__ . '/vendor/autoload.php';
     \$app = require_once __DIR__ . '/bootstrap/app.php';
     \$kernel = \$app->make('Illuminate\Contracts\Console\Kernel');
     \$kernel->bootstrap();
-    
-    \$db = Illuminate\Support\Facades\DB::connection();
-    \$schema = Illuminate\Support\Facades\Schema::getConnection();
     
     if (Illuminate\Support\Facades\Schema::hasTable('migrations')) {
         \$result = Illuminate\Support\Facades\DB::select(\"SHOW COLUMNS FROM migrations WHERE Field = 'id'\");
@@ -31,13 +29,15 @@ try {
 } catch (Exception \$e) {
     // Ignore errors
 }
-" 2>/dev/null || true
+" 2>/dev/null || echo "Could not fix migrations table (may not exist yet)"
 
 echo "Attempting to run database migrations..."
 
 for i in $(seq 1 $MAX_RETRIES); do
-    # Try to run migration, suppress error output to avoid log spam
-    if php artisan migrate --force 2>/dev/null; then
+    if php artisan migrate --force 2>&1 | grep -q "Nothing to migrate"; then
+        echo "No migrations to run."
+        break
+    elif php artisan migrate --force > /dev/null 2>&1; then
         echo "Migrations completed successfully!"
         break
     else
@@ -51,6 +51,6 @@ for i in $(seq 1 $MAX_RETRIES); do
     fi
 done
 
-echo "Starting Laravel server on port $PORT..."
-exec php artisan serve --host=0.0.0.0 --port=$PORT
+echo "Starting Laravel server on 0.0.0.0:${PORT:-8080}..."
+exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
 
