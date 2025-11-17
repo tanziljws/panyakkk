@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('likes', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('galeri_id')->constrained()->onDelete('cascade');
             $table->timestamps();
             
-            // Ensure a user can only like a gallery item once
-            $table->unique(['user_id', 'galeri_id']);
+            // Ensure a user can only like a gallery item once (when user_id is not null)
+            // Note: guest_token will be added in a later migration
         });
     }
 
