@@ -58,6 +58,16 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.2",
+            "ext-pdo": "*",
+            "ext-pdo_mysql": "*",
+            "ext-mbstring": "*",
+            "ext-xml": "*",
+            "ext-curl": "*",
+            "ext-zip": "*",
+            "ext-gd": "*"
         }
     },
     "minimum-stability": "stable",
