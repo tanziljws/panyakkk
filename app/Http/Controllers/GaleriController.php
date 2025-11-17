@@ -205,33 +205,33 @@ class GaleriController extends Controller
     public function toggleLike($id)
     {
         try {
-            $galeri = Galeri::findOrFail($id);
+        $galeri = Galeri::findOrFail($id);
 
-            // Allow guest likes persisted using a stable guest token stored in cookie
-            if (!Auth::check()) {
-                $guestToken = request()->cookie('guest_token');
-                $newTokenGenerated = false;
-                if (!$guestToken) {
-                    $guestToken = (string) Str::uuid();
-                    $newTokenGenerated = true;
-                }
+        // Allow guest likes persisted using a stable guest token stored in cookie
+        if (!Auth::check()) {
+            $guestToken = request()->cookie('guest_token');
+            $newTokenGenerated = false;
+            if (!$guestToken) {
+                $guestToken = (string) Str::uuid();
+                $newTokenGenerated = true;
+            }
 
-                // Toggle like for this guest
-                $existing = Like::where('galeri_id', $id)
-                    ->whereNull('user_id')
-                    ->where('guest_token', $guestToken)
-                    ->first();
+            // Toggle like for this guest
+            $existing = Like::where('galeri_id', $id)
+                ->whereNull('user_id')
+                ->where('guest_token', $guestToken)
+                ->first();
 
-                if ($existing) {
-                    $existing->delete();
-                    $liked = false;
-                } else {
+            if ($existing) {
+                $existing->delete();
+                $liked = false;
+            } else {
                     try {
-                        Like::create([
-                            'galeri_id' => $id,
-                            'guest_token' => $guestToken,
-                        ]);
-                        $liked = true;
+                Like::create([
+                    'galeri_id' => $id,
+                    'guest_token' => $guestToken,
+                ]);
+                $liked = true;
                     } catch (\Illuminate\Database\QueryException $e) {
                         // Handle duplicate entry or constraint violation
                         if ($e->getCode() == 23000) {
@@ -249,51 +249,51 @@ class GaleriController extends Controller
                             throw $e;
                         }
                     }
-                }
+            }
 
-                $likesCount = $galeri->likes()->count();
+            $likesCount = $galeri->likes()->count();
 
-                // Log guest like activity so it shows up in admin recent activity
+            // Log guest like activity so it shows up in admin recent activity
                 try {
-                    ActivityLog::logSystemActivity(
-                        'user_like',
-                        'Like foto: ' . $galeri->judul,
-                        'Aksi oleh pengunjung (guest) dari IP: ' . request()->ip()
-                    );
+            ActivityLog::logSystemActivity(
+                'user_like',
+                'Like foto: ' . $galeri->judul,
+                'Aksi oleh pengunjung (guest) dari IP: ' . request()->ip()
+            );
                 } catch (\Exception $e) {
                     // Log error but don't break the like functionality
                     \Log::warning('Failed to log guest like activity: ' . $e->getMessage());
                 }
 
-                $json = response()->json([
-                    'success' => true,
-                    'liked' => $liked,
-                    'likes_count' => $likesCount,
-                    'guest' => true
-                ]);
+            $json = response()->json([
+                'success' => true,
+                'liked' => $liked,
+                'likes_count' => $likesCount,
+                'guest' => true
+            ]);
 
-                // Attach cookie if we generated a new token
-                return $newTokenGenerated
-                    ? $json->cookie('guest_token', $guestToken, 60 * 24 * 365)
-                    : $json;
-            }
+            // Attach cookie if we generated a new token
+            return $newTokenGenerated
+                ? $json->cookie('guest_token', $guestToken, 60 * 24 * 365)
+                : $json;
+        }
 
-            // Authenticated user likes
-            $userId = Auth::id();
-            $like = Like::where('user_id', $userId)
-                ->where('galeri_id', $id)
-                ->first();
+        // Authenticated user likes
+        $userId = Auth::id();
+        $like = Like::where('user_id', $userId)
+            ->where('galeri_id', $id)
+            ->first();
 
-            if ($like) {
-                $like->delete();
-                $liked = false;
-            } else {
+        if ($like) {
+            $like->delete();
+            $liked = false;
+        } else {
                 try {
-                    Like::create([
-                        'user_id' => $userId,
-                        'galeri_id' => $id,
-                    ]);
-                    $liked = true;
+            Like::create([
+                'user_id' => $userId,
+                'galeri_id' => $id,
+            ]);
+            $liked = true;
                 } catch (\Illuminate\Database\QueryException $e) {
                     // Handle duplicate entry or constraint violation
                     if ($e->getCode() == 23000) {
@@ -311,28 +311,28 @@ class GaleriController extends Controller
                     }
                 }
 
-                // Log aktivitas user like
+            // Log aktivitas user like
                 try {
-                    ActivityLog::logUserActivity(
-                        'user_like',
-                        'Like foto: ' . $galeri->judul,
-                        $userId,
-                        'User menyukai foto galeri'
-                    );
+            ActivityLog::logUserActivity(
+                'user_like',
+                'Like foto: ' . $galeri->judul,
+                $userId,
+                'User menyukai foto galeri'
+            );
                 } catch (\Exception $e) {
                     // Log error but don't break the like functionality
                     \Log::warning('Failed to log user like activity: ' . $e->getMessage());
                 }
-            }
+        }
 
-            $likesCount = $galeri->likes()->count();
+        $likesCount = $galeri->likes()->count();
 
-            return response()->json([
-                'success' => true,
-                'liked' => $liked,
-                'likes_count' => $likesCount,
-                'guest' => false
-            ]);
+        return response()->json([
+            'success' => true,
+            'liked' => $liked,
+            'likes_count' => $likesCount,
+            'guest' => false
+        ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
@@ -358,27 +358,27 @@ class GaleriController extends Controller
     public function storeComment(Request $request, $id)
     {
         try {
-            $request->validate([
-                'content' => 'required|string|max:1000',
-                'guest_name' => 'nullable|string|max:100',
-            ]);
+        $request->validate([
+            'content' => 'required|string|max:1000',
+            'guest_name' => 'nullable|string|max:100',
+        ]);
 
-            $galeri = Galeri::findOrFail($id);
+        $galeri = Galeri::findOrFail($id);
 
-            $data = [
+        $data = [
                 'content' => trim($request->content),
-                'galeri_id' => $id,
-            ];
+            'galeri_id' => $id,
+        ];
 
-            if (Auth::check()) {
-                $data['user_id'] = Auth::id();
-            } else {
-                // For guests, we store the provided name; fallback to "Tamu"
+        if (Auth::check()) {
+            $data['user_id'] = Auth::id();
+        } else {
+            // For guests, we store the provided name; fallback to "Tamu"
                 $data['guest_name'] = trim($request->guest_name) ?: 'Tamu';
-            }
+        }
 
             try {
-                $comment = Comment::create($data);
+        $comment = Comment::create($data);
             } catch (\Illuminate\Database\QueryException $e) {
                 \Log::error('Comment creation failed: ' . $e->getMessage(), [
                     'data' => $data,
@@ -390,29 +390,29 @@ class GaleriController extends Controller
             // Load user relationship only if user_id exists
             if ($comment->user_id) {
                 try {
-                    $comment->load('user');
+        $comment->load('user');
                 } catch (\Exception $e) {
                     // If user relationship fails, continue without it
                     \Log::warning('Failed to load user relationship for comment: ' . $e->getMessage());
                 }
             }
 
-            // Log aktivitas: jika user login, catat sebagai user; jika tamu, catat sebagai system agar tetap tampil di dashboard
+        // Log aktivitas: jika user login, catat sebagai user; jika tamu, catat sebagai system agar tetap tampil di dashboard
             try {
-                if (Auth::check()) {
-                    ActivityLog::logUserActivity(
-                        'user_comment',
-                        'Komentar pada foto: ' . $galeri->judul,
-                        Auth::id(),
-                        'User memberikan komentar pada foto galeri'
-                    );
-                } else {
-                    ActivityLog::logSystemActivity(
-                        'user_comment',
-                        'Komentar pada foto: ' . $galeri->judul,
-                        'Komentar oleh pengunjung (guest): ' . ($data['guest_name'] ?? 'Tamu')
-                    );
-                }
+        if (Auth::check()) {
+            ActivityLog::logUserActivity(
+                'user_comment',
+                'Komentar pada foto: ' . $galeri->judul,
+                Auth::id(),
+                'User memberikan komentar pada foto galeri'
+            );
+        } else {
+            ActivityLog::logSystemActivity(
+                'user_comment',
+                'Komentar pada foto: ' . $galeri->judul,
+                'Komentar oleh pengunjung (guest): ' . ($data['guest_name'] ?? 'Tamu')
+            );
+        }
             } catch (\Exception $e) {
                 // Log error but don't break the comment functionality
                 \Log::warning('Failed to log comment activity: ' . $e->getMessage());
@@ -426,16 +426,16 @@ class GaleriController extends Controller
                 $userName = $comment->guest_name;
             }
 
-            return response()->json([
-                'success' => true,
-                'comment' => [
-                    'id' => $comment->id,
-                    'content' => $comment->content,
-                    'user_name' => $userName,
-                    'created_at' => $comment->created_at->diffForHumans(),
-                ],
-                'comments_count' => $galeri->comments()->count()
-            ]);
+        return response()->json([
+            'success' => true,
+            'comment' => [
+                'id' => $comment->id,
+                'content' => $comment->content,
+                'user_name' => $userName,
+                'created_at' => $comment->created_at->diffForHumans(),
+            ],
+            'comments_count' => $galeri->comments()->count()
+        ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -468,15 +468,15 @@ class GaleriController extends Controller
     public function getComments($id)
     {
         try {
-            $galeri = Galeri::findOrFail($id);
+        $galeri = Galeri::findOrFail($id);
             $comments = $galeri->comments()
                 ->with('user')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return response()->json([
-                'success' => true,
-                'comments' => $comments->map(function ($comment) {
+        return response()->json([
+            'success' => true,
+            'comments' => $comments->map(function ($comment) {
                     // Get user name safely
                     $userName = 'Tamu';
                     if ($comment->user_id && $comment->user) {
@@ -485,14 +485,14 @@ class GaleriController extends Controller
                         $userName = $comment->guest_name;
                     }
 
-                    return [
-                        'id' => $comment->id,
-                        'content' => $comment->content,
+                return [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
                         'user_name' => $userName,
-                        'created_at' => $comment->created_at->diffForHumans(),
-                    ];
-                })
-            ]);
+                    'created_at' => $comment->created_at->diffForHumans(),
+                ];
+            })
+        ]);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
