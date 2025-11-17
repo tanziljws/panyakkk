@@ -205,7 +205,7 @@ class GaleriController extends Controller
     public function toggleLike($id)
     {
         try {
-            $galeri = Galeri::findOrFail($id);
+        $galeri = Galeri::findOrFail($id);
 
         // Allow guest likes persisted using a stable guest token stored in cookie
         if (!Auth::check()) {
@@ -226,51 +226,52 @@ class GaleriController extends Controller
                 $existing->delete();
                 $liked = false;
             } else {
-                try {
-                    Like::create([
-                        'galeri_id' => $id,
-                        'guest_token' => $guestToken,
+                    try {
+                Like::create([
+                    'galeri_id' => $id,
+                    'guest_token' => $guestToken,
                         'user_id' => null,
-                    ]);
-                    $liked = true;
-                } catch (\Illuminate\Database\QueryException $e) {
-                    // Handle duplicate entry or constraint violation
+                ]);
+                $liked = true;
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // Handle duplicate entry or constraint violation
                     if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
-                        // Duplicate entry, check if it exists now
-                        $existing = Like::where('galeri_id', $id)
-                            ->whereNull('user_id')
-                            ->where('guest_token', $guestToken)
-                            ->first();
-                        if ($existing) {
-                            $liked = true;
-                        } else {
+                            // Duplicate entry, check if it exists now
+                            $existing = Like::where('galeri_id', $id)
+                                ->whereNull('user_id')
+                                ->where('guest_token', $guestToken)
+                                ->first();
+                            if ($existing) {
+                                $liked = true;
+                            } else {
                             // If still can't find, just return success with current state
                             \Log::warning('Like creation failed but entry not found: ' . $e->getMessage());
                             $liked = false;
-                        }
-                    } else {
+                            }
+                        } else {
                         \Log::error('Like creation error: ' . $e->getMessage());
-                        throw $e;
-                    }
+                            throw $e;
+                        }
                 } catch (\Exception $e) {
                     \Log::error('Unexpected error creating like: ' . $e->getMessage());
                     throw $e;
-                }
+                    }
             }
 
             $likesCount = $galeri->likes()->count();
 
             // Log guest like activity so it shows up in admin recent activity
-            try {
-                ActivityLog::logSystemActivity(
-                    'user_like',
-                    'Like foto: ' . $galeri->judul,
-                    'Aksi oleh pengunjung (guest) dari IP: ' . request()->ip()
-                );
-            } catch (\Exception $e) {
-                // Log error but don't break the like functionality
-                \Log::warning('Failed to log guest like activity: ' . $e->getMessage());
-            }
+            // Temporarily disabled to avoid breaking functionality
+            // try {
+            //     ActivityLog::logSystemActivity(
+            //         'user_like',
+            //         'Like foto: ' . $galeri->judul,
+            //         'Aksi oleh pengunjung (guest) dari IP: ' . request()->ip()
+            //     );
+            // } catch (\Exception $e) {
+            //     // Log error but don't break the like functionality
+            //     \Log::warning('Failed to log guest like activity: ' . $e->getMessage());
+            // }
 
             $json = response()->json([
                 'success' => true,
@@ -295,46 +296,47 @@ class GaleriController extends Controller
             $like->delete();
             $liked = false;
         } else {
-            try {
-                Like::create([
-                    'user_id' => $userId,
-                    'galeri_id' => $id,
-                ]);
-                $liked = true;
-            } catch (\Illuminate\Database\QueryException $e) {
-                // Handle duplicate entry or constraint violation
+                try {
+            Like::create([
+                'user_id' => $userId,
+                'galeri_id' => $id,
+            ]);
+            $liked = true;
+                } catch (\Illuminate\Database\QueryException $e) {
+                    // Handle duplicate entry or constraint violation
                 if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
-                    // Duplicate entry, check if it exists now
-                    $existing = Like::where('user_id', $userId)
-                        ->where('galeri_id', $id)
-                        ->first();
-                    if ($existing) {
-                        $liked = true;
-                    } else {
+                        // Duplicate entry, check if it exists now
+                        $existing = Like::where('user_id', $userId)
+                            ->where('galeri_id', $id)
+                            ->first();
+                        if ($existing) {
+                            $liked = true;
+                        } else {
                         \Log::warning('Like creation failed but entry not found: ' . $e->getMessage());
                         $liked = false;
-                    }
-                } else {
+                        }
+                    } else {
                     \Log::error('Like creation error: ' . $e->getMessage());
-                    throw $e;
-                }
+                        throw $e;
+                    }
             } catch (\Exception $e) {
                 \Log::error('Unexpected error creating like: ' . $e->getMessage());
                 throw $e;
-            }
+                }
 
             // Log aktivitas user like
-            try {
-                ActivityLog::logUserActivity(
-                    'user_like',
-                    'Like foto: ' . $galeri->judul,
-                    $userId,
-                    'User menyukai foto galeri'
-                );
-            } catch (\Exception $e) {
-                // Log error but don't break the like functionality
-                \Log::warning('Failed to log user like activity: ' . $e->getMessage());
-            }
+            // Temporarily disabled to avoid breaking functionality
+            // try {
+            //     ActivityLog::logUserActivity(
+            //         'user_like',
+            //         'Like foto: ' . $galeri->judul,
+            //         $userId,
+            //         'User menyukai foto galeri'
+            //     );
+            // } catch (\Exception $e) {
+            //     // Log error but don't break the like functionality
+            //     \Log::warning('Failed to log user like activity: ' . $e->getMessage());
+            // }
         }
 
         $likesCount = $galeri->likes()->count();
@@ -354,12 +356,14 @@ class GaleriController extends Controller
         } catch (\Exception $e) {
             \Log::error('Toggle like error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
-                'galeri_id' => $id
+                'galeri_id' => $id,
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memproses like'
+                'message' => 'Terjadi kesalahan saat memproses like: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -370,28 +374,28 @@ class GaleriController extends Controller
     public function storeComment(Request $request, $id)
     {
         try {
-            $request->validate([
-                'content' => 'required|string|max:1000',
-                'guest_name' => 'nullable|string|max:100',
-            ]);
+        $request->validate([
+            'content' => 'required|string|max:1000',
+            'guest_name' => 'nullable|string|max:100',
+        ]);
 
-            $galeri = Galeri::findOrFail($id);
+        $galeri = Galeri::findOrFail($id);
 
-            $data = [
+        $data = [
                 'content' => trim($request->content),
-                'galeri_id' => $id,
-            ];
+            'galeri_id' => $id,
+        ];
 
-            if (Auth::check()) {
-                $data['user_id'] = Auth::id();
-            } else {
-                // For guests, we store the provided name; fallback to "Tamu"
+        if (Auth::check()) {
+            $data['user_id'] = Auth::id();
+        } else {
+            // For guests, we store the provided name; fallback to "Tamu"
                 $data['guest_name'] = trim($request->guest_name) ?: 'Tamu';
                 $data['user_id'] = null; // Explicitly set to null for guests
-            }
+        }
 
             try {
-                $comment = Comment::create($data);
+        $comment = Comment::create($data);
             } catch (\Illuminate\Database\QueryException $e) {
                 \Log::error('Comment creation failed: ' . $e->getMessage(), [
                     'data' => $data,
@@ -413,33 +417,34 @@ class GaleriController extends Controller
             // Load user relationship only if user_id exists
             if ($comment->user_id) {
                 try {
-                    $comment->load('user');
+        $comment->load('user');
                 } catch (\Exception $e) {
                     // If user relationship fails, continue without it
                     \Log::warning('Failed to load user relationship for comment: ' . $e->getMessage());
                 }
             }
 
-            // Log aktivitas: jika user login, catat sebagai user; jika tamu, catat sebagai system agar tetap tampil di dashboard
-            try {
-                if (Auth::check()) {
-                    ActivityLog::logUserActivity(
-                        'user_comment',
-                        'Komentar pada foto: ' . $galeri->judul,
-                        Auth::id(),
-                        'User memberikan komentar pada foto galeri'
-                    );
-                } else {
-                    ActivityLog::logSystemActivity(
-                        'user_comment',
-                        'Komentar pada foto: ' . $galeri->judul,
-                        'Komentar oleh pengunjung (guest): ' . ($data['guest_name'] ?? 'Tamu')
-                    );
-                }
-            } catch (\Exception $e) {
-                // Log error but don't break the comment functionality
-                \Log::warning('Failed to log comment activity: ' . $e->getMessage());
-            }
+        // Log aktivitas: jika user login, catat sebagai user; jika tamu, catat sebagai system agar tetap tampil di dashboard
+            // Temporarily disabled to avoid breaking functionality
+            // try {
+            //     if (Auth::check()) {
+            //         ActivityLog::logUserActivity(
+            //             'user_comment',
+            //             'Komentar pada foto: ' . $galeri->judul,
+            //             Auth::id(),
+            //             'User memberikan komentar pada foto galeri'
+            //         );
+            //     } else {
+            //         ActivityLog::logSystemActivity(
+            //             'user_comment',
+            //             'Komentar pada foto: ' . $galeri->judul,
+            //             'Komentar oleh pengunjung (guest): ' . ($data['guest_name'] ?? 'Tamu')
+            //         );
+            //     }
+            // } catch (\Exception $e) {
+            //     // Log error but don't break the comment functionality
+            //     \Log::warning('Failed to log comment activity: ' . $e->getMessage());
+            // }
 
             // Get user name safely
             $userName = 'Tamu';
@@ -475,12 +480,14 @@ class GaleriController extends Controller
             \Log::error('Store comment error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'galeri_id' => $id,
-                'request_data' => $request->all()
+                'request_data' => $request->all(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan komentar'
+                'message' => 'Terjadi kesalahan saat menyimpan komentar: ' . $e->getMessage()
             ], 500);
         }
     }
