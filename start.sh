@@ -9,7 +9,7 @@ echo "Port: ${PORT:-8080}"
 
 # Fix migrations table structure before running migrations
 echo "Fixing migrations table structure if needed..."
-php artisan db:show 2>/dev/null && php -r "
+php -r "
 try {
     require __DIR__ . '/vendor/autoload.php';
     \$app = require_once __DIR__ . '/bootstrap/app.php';
@@ -17,19 +17,27 @@ try {
     \$kernel->bootstrap();
     
     if (Illuminate\Support\Facades\Schema::hasTable('migrations')) {
-        \$result = Illuminate\Support\Facades\DB::select(\"SHOW COLUMNS FROM migrations WHERE Field = 'id'\");
-        if (!empty(\$result)) {
-            \$col = \$result[0];
-            if (stripos(\$col->Extra ?? '', 'auto_increment') === false) {
-                Illuminate\Support\Facades\DB::statement('ALTER TABLE migrations MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT');
-                echo 'Fixed migrations table structure' . PHP_EOL;
+        try {
+            \$result = Illuminate\Support\Facades\DB::select(\"SHOW COLUMNS FROM migrations WHERE Field = 'id'\");
+            if (!empty(\$result)) {
+                \$col = \$result[0];
+                if (stripos(\$col->Extra ?? '', 'auto_increment') === false) {
+                    Illuminate\Support\Facades\DB::statement('ALTER TABLE migrations MODIFY id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT');
+                    echo 'Fixed migrations table structure: Added AUTO_INCREMENT to id column' . PHP_EOL;
+                } else {
+                    echo 'Migrations table structure is correct' . PHP_EOL;
+                }
             }
+        } catch (Exception \$e) {
+            echo 'Error checking migrations table: ' . \$e->getMessage() . PHP_EOL;
         }
+    } else {
+        echo 'Migrations table does not exist yet, will be created by migrations' . PHP_EOL;
     }
 } catch (Exception \$e) {
-    // Ignore errors
+    echo 'Could not bootstrap Laravel: ' . \$e->getMessage() . PHP_EOL;
 }
-" 2>/dev/null || echo "Could not fix migrations table (may not exist yet)"
+" 2>&1 || echo "Could not fix migrations table (database may not be ready)"
 
 echo "Attempting to run database migrations..."
 
