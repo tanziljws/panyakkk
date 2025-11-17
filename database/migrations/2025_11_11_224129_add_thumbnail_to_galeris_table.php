@@ -11,9 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('galeris', function (Blueprint $table) {
-            $table->string('thumbnail')->nullable()->after('gambar');
-        });
+        // Check if column already exists before adding it
+        if (Schema::hasTable('galeris')) {
+            $columns = Schema::getColumnListing('galeris');
+            
+            if (!in_array('thumbnail', $columns)) {
+                Schema::table('galeris', function (Blueprint $table) {
+                    $table->string('thumbnail')->nullable()->after('gambar');
+                });
+            }
+        }
     }
 
     /**
@@ -21,8 +28,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('galeris', function (Blueprint $table) {
-            $table->dropColumn('thumbnail');
-        });
+        if (Schema::hasTable('galeris')) {
+            $columns = Schema::getColumnListing('galeris');
+            
+            if (in_array('thumbnail', $columns)) {
+                Schema::table('galeris', function (Blueprint $table) {
+                    $table->dropColumn('thumbnail');
+                });
+            }
+        }
     }
 };
