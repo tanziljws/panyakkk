@@ -284,69 +284,45 @@ class GaleriController extends Controller
             return $newTokenGenerated
                 ? $json->cookie('guest_token', $guestToken, 60 * 24 * 365)
                 : $json;
-        }
+            } else {
+                // Authenticated user likes
+                $userId = Auth::id();
+                $like = Like::where('user_id', $userId)
+                    ->where('galeri_id', $id)
+                    ->first();
 
-        // Authenticated user likes
-        $userId = Auth::id();
-        $like = Like::where('user_id', $userId)
-            ->where('galeri_id', $id)
-            ->first();
-
-        if ($like) {
-            $like->delete();
-            $liked = false;
-        } else {
-                try {
-            Like::create([
-                'user_id' => $userId,
-                'galeri_id' => $id,
-            ]);
-            $liked = true;
-                } catch (\Illuminate\Database\QueryException $e) {
-                    // Handle duplicate entry or constraint violation
-                if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
-                        // Duplicate entry, check if it exists now
-                        $existing = Like::where('user_id', $userId)
-                            ->where('galeri_id', $id)
-                            ->first();
-                        if ($existing) {
+                if ($like) {
+                    // Unlike - hapus like yang ada
+                    $like->delete();
+                    $liked = false;
+                } else {
+                    // Like - buat like baru
+                    try {
+                        Like::create([
+                            'user_id' => $userId,
+                            'galeri_id' => $id,
+                        ]);
+                        $liked = true;
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // Jika duplicate, berarti sudah like
+                        if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
                             $liked = true;
                         } else {
-                        \Log::warning('Like creation failed but entry not found: ' . $e->getMessage());
-                        $liked = false;
+                            \Log::error('Error creating user like: ' . $e->getMessage());
+                            throw $e;
                         }
-                    } else {
-                    \Log::error('Like creation error: ' . $e->getMessage());
-                        throw $e;
                     }
-            } catch (\Exception $e) {
-                \Log::error('Unexpected error creating like: ' . $e->getMessage());
-                throw $e;
                 }
 
-            // Log aktivitas user like
-            // Temporarily disabled to avoid breaking functionality
-            // try {
-            //     ActivityLog::logUserActivity(
-            //         'user_like',
-            //         'Like foto: ' . $galeri->judul,
-            //         $userId,
-            //         'User menyukai foto galeri'
-            //     );
-            // } catch (\Exception $e) {
-            //     // Log error but don't break the like functionality
-            //     \Log::warning('Failed to log user like activity: ' . $e->getMessage());
-            // }
-        }
+                $likesCount = $galeri->likes()->count();
 
-        $likesCount = $galeri->likes()->count();
-
-        return response()->json([
-            'success' => true,
-            'liked' => $liked,
-            'likes_count' => $likesCount,
-            'guest' => false
-        ]);
+                return response()->json([
+                    'success' => true,
+                    'liked' => $liked,
+                    'likes_count' => $likesCount,
+                    'guest' => false
+                ]);
+            }
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
