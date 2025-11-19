@@ -53,34 +53,26 @@ class Galeri extends Model
     }
 
     /**
-     * Get the image URL (always HTTPS in production)
+     * Get the image URL (always HTTPS)
      */
     public function getImageUrlAttribute()
     {
         if ($this->gambar) {
-            $url = asset('images/' . $this->gambar);
-            // Force HTTPS in production
-            if (app()->environment('production') && strpos($url, 'http://') === 0) {
-                $url = str_replace('http://', 'https://', $url);
-            }
-            return $url;
+            // Use secure_asset to ensure HTTPS
+            return secure_asset('images/' . $this->gambar);
         }
         return null;
     }
 
     /**
-     * Get the thumbnail URL (always HTTPS in production)
+     * Get the thumbnail URL (always HTTPS)
      */
     public function getThumbnailUrlAttribute()
     {
         $image = $this->thumbnail ?? $this->gambar;
         if ($image) {
-            $url = asset('images/' . $image);
-            // Force HTTPS in production
-            if (app()->environment('production') && strpos($url, 'http://') === 0) {
-                $url = str_replace('http://', 'https://', $url);
-            }
-            return $url;
+            // Use secure_asset to ensure HTTPS
+            return secure_asset('images/' . $image);
         }
         return null;
     }
