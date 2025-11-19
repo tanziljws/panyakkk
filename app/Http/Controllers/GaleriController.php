@@ -205,105 +205,159 @@ class GaleriController extends Controller
     public function toggleLike($id)
     {
         try {
-        $galeri = Galeri::findOrFail($id);
+            $galeri = Galeri::findOrFail($id);
             $liked = false;
             $isGuest = !Auth::check();
 
             if ($isGuest) {
                 // Guest likes
-            $guestToken = request()->cookie('guest_token');
-            $newTokenGenerated = false;
+                $guestToken = request()->cookie('guest_token');
+                $newTokenGenerated = false;
                 
-            if (!$guestToken) {
-                $guestToken = (string) Str::uuid();
-                $newTokenGenerated = true;
-            }
+                if (!$guestToken) {
+                    $guestToken = (string) Str::uuid();
+                    $newTokenGenerated = true;
+                }
 
                 // Check if already liked
-            $existing = Like::where('galeri_id', $id)
-                ->whereNull('user_id')
-                ->where('guest_token', $guestToken)
-                ->first();
+                $existing = Like::where('galeri_id', $id)
+                    ->whereNull('user_id')
+                    ->where('guest_token', $guestToken)
+                    ->first();
 
-            if ($existing) {
+                if ($existing) {
                     // Unlike
-                $existing->delete();
-                $liked = false;
-            } else {
+                    try {
+                        $existing->delete();
+                        $liked = false;
+                    } catch (\Exception $e) {
+                        \Log::error('Error deleting guest like: ' . $e->getMessage());
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Gagal menghapus like'
+                        ], 500);
+                    }
+                } else {
                     // Like
                     try {
-                Like::create([
-                    'galeri_id' => $id,
-                    'guest_token' => $guestToken,
+                        Like::create([
+                            'galeri_id' => $id,
+                            'guest_token' => $guestToken,
                             'user_id' => null,
-                ]);
-                $liked = true;
+                        ]);
+                        $liked = true;
                     } catch (\Illuminate\Database\QueryException $e) {
-                        // If duplicate, already liked
-                        if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
-                                $liked = true;
-                        } else {
-                            \Log::error('Error creating guest like: ' . $e->getMessage());
-                            return response()->json([
-                                'success' => false,
-                                'message' => 'Gagal menyimpan like: ' . $e->getMessage()
-                            ], 500);
-                        }
-                    }
-            }
-
-            $likesCount = $galeri->likes()->count();
-                $response = response()->json([
-                'success' => true,
-                'liked' => $liked,
-                'likes_count' => $likesCount,
-                'guest' => true
-            ]);
-
-            return $newTokenGenerated
-                    ? $response->cookie('guest_token', $guestToken, 60 * 24 * 365)
-                    : $response;
-            } else {
-        // Authenticated user likes
-        $userId = Auth::id();
-        $like = Like::where('user_id', $userId)
-            ->where('galeri_id', $id)
-            ->first();
-
-        if ($like) {
-                    // Unlike
-            $like->delete();
-            $liked = false;
-        } else {
-                    // Like
-                try {
-            Like::create([
-                'user_id' => $userId,
-                'galeri_id' => $id,
-            ]);
-            $liked = true;
-                } catch (\Illuminate\Database\QueryException $e) {
                         // If duplicate, already liked
                         if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
                             $liked = true;
                         } else {
-                            \Log::error('Error creating user like: ' . $e->getMessage());
+                            \Log::error('Error creating guest like: ' . $e->getMessage(), [
+                                'code' => $e->getCode(),
+                                'sql' => $e->getSql() ?? 'N/A'
+                            ]);
                             return response()->json([
                                 'success' => false,
-                                'message' => 'Gagal menyimpan like: ' . $e->getMessage()
+                                'message' => 'Gagal menyimpan like'
                             ], 500);
                         }
+                    } catch (\Exception $e) {
+                        \Log::error('Unexpected error creating guest like: ' . $e->getMessage());
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Gagal menyimpan like'
+                        ], 500);
+                    }
                 }
-        }
 
-        $likesCount = $galeri->likes()->count();
+                try {
+                    $likesCount = $galeri->likes()->count();
+                } catch (\Exception $e) {
+                    \Log::warning('Error counting likes: ' . $e->getMessage());
+                    $likesCount = 0;
+                }
 
-        return response()->json([
-            'success' => true,
-            'liked' => $liked,
-            'likes_count' => $likesCount,
-            'guest' => false
-        ]);
+                $response = response()->json([
+                    'success' => true,
+                    'liked' => $liked,
+                    'likes_count' => $likesCount,
+                    'guest' => true
+                ]);
+
+                return $newTokenGenerated
+                    ? $response->cookie('guest_token', $guestToken, 60 * 24 * 365)
+                    : $response;
+            } else {
+                // Authenticated user likes
+                $userId = Auth::id();
+                
+                if (!$userId) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'User tidak terautentikasi'
+                    ], 401);
+                }
+
+                $like = Like::where('user_id', $userId)
+                    ->where('galeri_id', $id)
+                    ->first();
+
+                if ($like) {
+                    // Unlike
+                    try {
+                        $like->delete();
+                        $liked = false;
+                    } catch (\Exception $e) {
+                        \Log::error('Error deleting user like: ' . $e->getMessage());
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Gagal menghapus like'
+                        ], 500);
+                    }
+                } else {
+                    // Like
+                    try {
+                        Like::create([
+                            'user_id' => $userId,
+                            'galeri_id' => $id,
+                        ]);
+                        $liked = true;
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // If duplicate, already liked
+                        if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
+                            $liked = true;
+                        } else {
+                            \Log::error('Error creating user like: ' . $e->getMessage(), [
+                                'code' => $e->getCode(),
+                                'user_id' => $userId,
+                                'galeri_id' => $id
+                            ]);
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Gagal menyimpan like'
+                            ], 500);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Unexpected error creating user like: ' . $e->getMessage());
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Gagal menyimpan like'
+                        ], 500);
+                    }
+                }
+
+                try {
+                    $likesCount = $galeri->likes()->count();
+                } catch (\Exception $e) {
+                    \Log::warning('Error counting likes: ' . $e->getMessage());
+                    $likesCount = 0;
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'liked' => $liked,
+                    'likes_count' => $likesCount,
+                    'guest' => false
+                ]);
             }
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -321,7 +375,7 @@ class GaleriController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memproses like: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat memproses like'
             ], 500);
         }
     }
@@ -332,40 +386,45 @@ class GaleriController extends Controller
     public function storeComment(Request $request, $id)
     {
         try {
-        $request->validate([
-            'content' => 'required|string|max:1000',
-            'guest_name' => 'nullable|string|max:100',
-        ]);
+            $request->validate([
+                'content' => 'required|string|max:1000',
+                'guest_name' => 'nullable|string|max:100',
+            ]);
 
-        $galeri = Galeri::findOrFail($id);
+            $galeri = Galeri::findOrFail($id);
 
-        $data = [
+            $data = [
                 'content' => trim($request->content),
-            'galeri_id' => $id,
-        ];
+                'galeri_id' => $id,
+            ];
 
-        if (Auth::check()) {
-            $data['user_id'] = Auth::id();
-        } else {
-            // For guests, we store the provided name; fallback to "Tamu"
+            if (Auth::check()) {
+                $data['user_id'] = Auth::id();
+                $data['guest_name'] = null; // Explicitly set to null for authenticated users
+            } else {
+                // For guests, we store the provided name; fallback to "Tamu"
                 $data['guest_name'] = trim($request->guest_name) ?: 'Tamu';
                 $data['user_id'] = null; // Explicitly set to null for guests
-        }
+            }
 
             try {
-        $comment = Comment::create($data);
+                $comment = Comment::create($data);
             } catch (\Illuminate\Database\QueryException $e) {
                 \Log::error('Comment creation failed: ' . $e->getMessage(), [
                     'data' => $data,
                     'error_code' => $e->getCode(),
-                    'error_message' => $e->getMessage()
+                    'error_message' => $e->getMessage(),
+                    'sql' => $e->getSql() ?? 'N/A'
                 ]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal menyimpan komentar: ' . $e->getMessage()
+                    'message' => 'Gagal menyimpan komentar'
                 ], 500);
             } catch (\Exception $e) {
-                \Log::error('Unexpected error creating comment: ' . $e->getMessage());
+                \Log::error('Unexpected error creating comment: ' . $e->getMessage(), [
+                    'data' => $data,
+                    'trace' => $e->getTraceAsString()
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Terjadi kesalahan saat menyimpan komentar'
@@ -375,53 +434,45 @@ class GaleriController extends Controller
             // Load user relationship only if user_id exists
             if ($comment->user_id) {
                 try {
-        $comment->load('user');
+                    $comment->load('user');
                 } catch (\Exception $e) {
                     // If user relationship fails, continue without it
                     \Log::warning('Failed to load user relationship for comment: ' . $e->getMessage());
                 }
             }
 
-        // Log aktivitas: jika user login, catat sebagai user; jika tamu, catat sebagai system agar tetap tampil di dashboard
-            // Temporarily disabled to avoid breaking functionality
-            // try {
-            //     if (Auth::check()) {
-            //         ActivityLog::logUserActivity(
-            //             'user_comment',
-            //             'Komentar pada foto: ' . $galeri->judul,
-            //             Auth::id(),
-            //             'User memberikan komentar pada foto galeri'
-            //         );
-            //     } else {
-            //         ActivityLog::logSystemActivity(
-            //             'user_comment',
-            //             'Komentar pada foto: ' . $galeri->judul,
-            //             'Komentar oleh pengunjung (guest): ' . ($data['guest_name'] ?? 'Tamu')
-            //         );
-            //     }
-            // } catch (\Exception $e) {
-            //     // Log error but don't break the comment functionality
-            //     \Log::warning('Failed to log comment activity: ' . $e->getMessage());
-            // }
-
             // Get user name safely
             $userName = 'Tamu';
-            if ($comment->user_id && $comment->relationLoaded('user') && $comment->user) {
-                $userName = $comment->user->name;
-            } elseif ($comment->guest_name) {
-                $userName = $comment->guest_name;
+            try {
+                if ($comment->user_id && $comment->relationLoaded('user') && $comment->user) {
+                    $userName = $comment->user->name;
+                } elseif ($comment->guest_name) {
+                    $userName = $comment->guest_name;
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Error getting user name for comment: ' . $e->getMessage());
+                if ($comment->guest_name) {
+                    $userName = $comment->guest_name;
+                }
             }
 
-        return response()->json([
-            'success' => true,
-            'comment' => [
-                'id' => $comment->id,
-                'content' => $comment->content,
-                'user_name' => $userName,
-                'created_at' => $comment->created_at->diffForHumans(),
-            ],
-            'comments_count' => $galeri->comments()->count()
-        ]);
+            try {
+                $commentsCount = $galeri->comments()->count();
+            } catch (\Exception $e) {
+                \Log::warning('Error counting comments: ' . $e->getMessage());
+                $commentsCount = 0;
+            }
+
+            return response()->json([
+                'success' => true,
+                'comment' => [
+                    'id' => $comment->id,
+                    'content' => $comment->content,
+                    'user_name' => $userName,
+                    'created_at' => $comment->created_at->diffForHumans(),
+                ],
+                'comments_count' => $commentsCount
+            ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -438,14 +489,14 @@ class GaleriController extends Controller
             \Log::error('Store comment error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'galeri_id' => $id,
-                'request_data' => $request->all(),
+                'request_data' => $request->except(['content']),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan komentar: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan saat menyimpan komentar'
             ], 500);
         }
     }
