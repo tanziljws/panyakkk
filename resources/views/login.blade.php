@@ -39,8 +39,9 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('login.submit') }}" class="login-form">
+                    <form method="POST" action="{{ route('login.submit') }}" class="login-form" id="loginForm">
                         @csrf
+                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
                         
                         <div class="form-group mb-3">
                             <div class="input-group">
@@ -330,4 +331,42 @@
     }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const submitButton = loginForm?.querySelector('button[type="submit"]');
+    
+    if (loginForm && submitButton) {
+        let isSubmitting = false;
+        
+        loginForm.addEventListener('submit', function(e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            
+            isSubmitting = true;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span>Signing in...</span><i class="bi bi-hourglass-split ms-2"></i>';
+            
+            // Timeout fallback - re-enable button after 10 seconds
+            setTimeout(function() {
+                if (isSubmitting) {
+                    isSubmitting = false;
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<span>Sign In</span><i class="bi bi-arrow-right ms-2"></i>';
+                }
+            }, 10000);
+        });
+        
+        // Re-enable on error (if form comes back with errors)
+        if (document.querySelector('.alert-danger')) {
+            isSubmitting = false;
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<span>Sign In</span><i class="bi bi-arrow-right ms-2"></i>';
+        }
+    }
+});
+</script>
 @endsection 
