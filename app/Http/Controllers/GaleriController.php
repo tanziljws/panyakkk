@@ -206,122 +206,104 @@ class GaleriController extends Controller
     {
         try {
         $galeri = Galeri::findOrFail($id);
+            $liked = false;
+            $isGuest = !Auth::check();
 
-        // Allow guest likes persisted using a stable guest token stored in cookie
-        if (!Auth::check()) {
+            if ($isGuest) {
+                // Guest likes
             $guestToken = request()->cookie('guest_token');
             $newTokenGenerated = false;
+                
             if (!$guestToken) {
                 $guestToken = (string) Str::uuid();
                 $newTokenGenerated = true;
             }
 
-            // Toggle like for this guest
+                // Check if already liked
             $existing = Like::where('galeri_id', $id)
                 ->whereNull('user_id')
                 ->where('guest_token', $guestToken)
                 ->first();
 
             if ($existing) {
+                    // Unlike
                 $existing->delete();
                 $liked = false;
             } else {
+                    // Like
                     try {
                 Like::create([
                     'galeri_id' => $id,
                     'guest_token' => $guestToken,
-                        'user_id' => null,
+                            'user_id' => null,
                 ]);
                 $liked = true;
                     } catch (\Illuminate\Database\QueryException $e) {
-                        // Handle duplicate entry or constraint violation
-                    if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
-                            // Duplicate entry, check if it exists now
-                            $existing = Like::where('galeri_id', $id)
-                                ->whereNull('user_id')
-                                ->where('guest_token', $guestToken)
-                                ->first();
-                            if ($existing) {
+                        // If duplicate, already liked
+                        if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
                                 $liked = true;
-                            } else {
-                            // If still can't find, just return success with current state
-                            \Log::warning('Like creation failed but entry not found: ' . $e->getMessage());
-                            $liked = false;
-                            }
                         } else {
-                        \Log::error('Like creation error: ' . $e->getMessage());
-                            throw $e;
+                            \Log::error('Error creating guest like: ' . $e->getMessage());
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Gagal menyimpan like: ' . $e->getMessage()
+                            ], 500);
                         }
-                } catch (\Exception $e) {
-                    \Log::error('Unexpected error creating like: ' . $e->getMessage());
-                    throw $e;
                     }
             }
 
             $likesCount = $galeri->likes()->count();
-
-            // Log guest like activity so it shows up in admin recent activity
-            // Temporarily disabled to avoid breaking functionality
-            // try {
-            //     ActivityLog::logSystemActivity(
-            //         'user_like',
-            //         'Like foto: ' . $galeri->judul,
-            //         'Aksi oleh pengunjung (guest) dari IP: ' . request()->ip()
-            //     );
-            // } catch (\Exception $e) {
-            //     // Log error but don't break the like functionality
-            //     \Log::warning('Failed to log guest like activity: ' . $e->getMessage());
-            // }
-
-            $json = response()->json([
+                $response = response()->json([
                 'success' => true,
                 'liked' => $liked,
                 'likes_count' => $likesCount,
                 'guest' => true
             ]);
 
-            // Attach cookie if we generated a new token
             return $newTokenGenerated
-                ? $json->cookie('guest_token', $guestToken, 60 * 24 * 365)
-                : $json;
+                    ? $response->cookie('guest_token', $guestToken, 60 * 24 * 365)
+                    : $response;
             } else {
-                // Authenticated user likes
-                $userId = Auth::id();
-                $like = Like::where('user_id', $userId)
-                    ->where('galeri_id', $id)
-                    ->first();
+        // Authenticated user likes
+        $userId = Auth::id();
+        $like = Like::where('user_id', $userId)
+            ->where('galeri_id', $id)
+            ->first();
 
-                if ($like) {
-                    // Unlike - hapus like yang ada
-                    $like->delete();
-                    $liked = false;
-                } else {
-                    // Like - buat like baru
-                    try {
-                        Like::create([
-                            'user_id' => $userId,
-                            'galeri_id' => $id,
-                        ]);
-                        $liked = true;
-                    } catch (\Illuminate\Database\QueryException $e) {
-                        // Jika duplicate, berarti sudah like
+        if ($like) {
+                    // Unlike
+            $like->delete();
+            $liked = false;
+        } else {
+                    // Like
+                try {
+            Like::create([
+                'user_id' => $userId,
+                'galeri_id' => $id,
+            ]);
+            $liked = true;
+                } catch (\Illuminate\Database\QueryException $e) {
+                        // If duplicate, already liked
                         if ($e->getCode() == 23000 || strpos($e->getMessage(), 'Duplicate') !== false) {
                             $liked = true;
                         } else {
                             \Log::error('Error creating user like: ' . $e->getMessage());
-                            throw $e;
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Gagal menyimpan like: ' . $e->getMessage()
+                            ], 500);
                         }
-                    }
                 }
+        }
 
-                $likesCount = $galeri->likes()->count();
+        $likesCount = $galeri->likes()->count();
 
-                return response()->json([
-                    'success' => true,
-                    'liked' => $liked,
-                    'likes_count' => $likesCount,
-                    'guest' => false
-                ]);
+        return response()->json([
+            'success' => true,
+            'liked' => $liked,
+            'likes_count' => $likesCount,
+            'guest' => false
+        ]);
             }
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
