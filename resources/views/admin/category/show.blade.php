@@ -66,7 +66,7 @@
                             @foreach($category->galeris as $galeri)
                             <div class="col-md-6 mb-3">
                                 <div class="card">
-                                    <img src="{{ asset('images/' . $galeri->gambar) }}" 
+                                    <img src="{{ secure_asset('images/' . $galeri->gambar) }}" 
                                          class="card-img-top" 
                                          alt="{{ $galeri->judul }}"
                                          style="height: 150px; object-fit: cover;">

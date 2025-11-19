@@ -564,7 +564,7 @@
     <div class="sidebar fade-in-up" id="sidebar">
         <div class="sidebar-header">
             <div class="logo-container">
-                <img src="{{ asset('images/logosmkn4.png') }}" alt="SMK Negeri 4 Kota Bogor" class="logo">
+                <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4 Kota Bogor" class="logo">
                 <h5 class="logo-text">SMK NEGERI 4<br>
                     @auth
                         <small style="color: #ffd700; font-size: 0.75rem;">
@@ -627,7 +627,7 @@
                         <a href="{{ route('profile') }}" class="nav-item {{ request()->routeIs('profile') ? 'active' : '' }}" style="display: block; text-decoration: none; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 0.5rem; border-left: 4px solid var(--accent-color); margin-bottom: 0.5rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 @if(Auth::user()->photo)
-                                    <img id="sidebarProfilePhoto" class="profile-photo" src="{{ asset('images/profiles/' . Auth::user()->photo) }}" alt="{{ Auth::user()->name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd700;">
+                                    <img id="sidebarProfilePhoto" class="profile-photo" src="{{ secure_asset('images/profiles/' . Auth::user()->photo) }}" alt="{{ Auth::user()->name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd700;">
                                 @else
                                     <div id="sidebarProfilePlaceholder" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; border: 2px solid #ffd700;">
                                         <i class="bi bi-person-circle" style="font-size: 1.5rem; color: #ffd700;"></i>

@@ -49,7 +49,7 @@
                         @forelse($galeri as $item)
                         <div class="col-md-4 mb-3">
                             <div class="card">
-                                <img src="{{ asset('images/' . $item->gambar) }}" 
+                                <img src="{{ secure_asset('images/' . $item->gambar) }}" 
                                      class="card-img-top" 
                                      alt="{{ $item->judul }}"
                                      style="height: 200px; object-fit: cover;">

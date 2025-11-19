@@ -9,7 +9,7 @@
             <div class="login-card">
                 <div class="login-header text-center mb-4">
                     <div class="logo-section mb-4">
-                        <img src="{{ asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="login-logo">
+                        <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="login-logo">
                         <h2 class="school-name mt-3">SMK Negeri 4</h2>
                         <p class="school-tagline">Excellence in Vocational Education</p>
                     </div>

@@ -17,7 +17,7 @@
             <div class="card">
                 <div class="card-body text-center">
                     <div class="profile-avatar mb-3">
-                        <img src="{{ asset('images/smkn4.jpg') }}" alt="Profile Avatar" class="avatar-image">
+                        <img src="{{ secure_asset('images/smkn4.jpg') }}" alt="Profile Avatar" class="avatar-image">
                         <button class="avatar-edit-btn" data-bs-toggle="modal" data-bs-target="#avatarModal">
                             <i class="bi bi-camera"></i>
                         </button>
@@ -225,7 +225,7 @@
             </div>
             <div class="modal-body">
                 <div class="text-center mb-3">
-                    <img src="{{ asset('images/smkn4.jpg') }}" alt="Current Avatar" class="img-fluid rounded" style="max-width: 200px;">
+                    <img src="{{ secure_asset('images/smkn4.jpg') }}" alt="Current Avatar" class="img-fluid rounded" style="max-width: 200px;">
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Pilih Foto Baru</label>

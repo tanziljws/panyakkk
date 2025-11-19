@@ -115,7 +115,7 @@
                                 Foto Saat Ini
                             </label>
                             <div class="current-image mb-3">
-                                <img src="{{ asset('images/' . $galeri->gambar) }}" 
+                                <img src="{{ secure_asset('images/' . $galeri->gambar) }}" 
                                      alt="{{ $galeri->judul }}" 
                                      class="img-fluid rounded" 
                                      style="max-height: 200px; width: 100%; object-fit: cover;">

@@ -126,7 +126,7 @@
                                 Gambar Konten
                             </h6>
                             <div class="content-image">
-                                <img src="{{ asset('images/' . $content->gambar) }}" 
+                                <img src="{{ secure_asset('images/' . $content->gambar) }}" 
                                      alt="{{ $content->judul }}" 
                                      class="img-fluid rounded" 
                                      style="max-width: 100%; height: auto;">

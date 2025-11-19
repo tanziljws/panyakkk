@@ -23,7 +23,7 @@
             <div class="login-card">
                 <div class="login-header">
                     <div class="logo-section">
-                        <img src="{{ asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="login-logo">
+                        <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="login-logo">
                         <h1 class="school-name">SMK Negeri 4</h1>
                         <p class="school-tagline">Administrator Panel</p>
                     </div>

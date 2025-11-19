@@ -13,7 +13,7 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo-container">
-                    <img src="{{ asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="sidebar-logo">
+                    <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="sidebar-logo">
                 </div>
                 <h4 class="sidebar-title">Admin Panel</h4>
             </div>

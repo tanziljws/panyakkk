@@ -22,7 +22,7 @@
                 <div class="card-body text-center">
                     <div class="profile-photo-container">
                         @if(Auth::user()->photo)
-                            <img src="{{ asset('images/profiles/' . Auth::user()->photo) }}?t={{ time() }}" alt="{{ Auth::user()->name }}" class="profile-photo" id="profilePhoto">
+                            <img src="{{ secure_asset('images/profiles/' . Auth::user()->photo) }}?t={{ time() }}" alt="{{ Auth::user()->name }}" class="profile-photo" id="profilePhoto">
                         @else
                             <div class="profile-photo-placeholder" id="profilePhoto">
                                 <i class="bi bi-person-circle"></i>

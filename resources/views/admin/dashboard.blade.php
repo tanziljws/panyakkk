@@ -14,7 +14,7 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo-container">
-                    <img src="{{ asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="sidebar-logo">
+                    <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="sidebar-logo">
                 </div>
                 <h4 class="sidebar-title">Admin Panel</h4>
                 <p class="sidebar-subtitle">SMK Negeri 4 Kota Bogor</p>
@@ -304,7 +304,7 @@
                         <div class="user-item">
                             <div class="user-avatar">
                                 @if($user->photo)
-                                    <img src="{{ asset('images/' . $user->photo) }}" alt="{{ $user->name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                    <img src="{{ secure_asset('images/' . $user->photo) }}" alt="{{ $user->name }}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                                 @else
                                     <i class="bi bi-person"></i>
                                 @endif
