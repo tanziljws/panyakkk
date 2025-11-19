@@ -13,7 +13,7 @@
     <nav class="navbar navbar-expand-lg fixed-top">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <img src="{{ secure_secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="navbar-logo">
+                <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="navbar-logo">
                 <span class="brand-text">SMK Negeri 4</span>
             </a>
             
@@ -48,7 +48,7 @@
     <!-- Hero Section -->
     <section id="home" class="hero-section">
         <div class="hero-bg">
-            <img src="{{ secure_secure_asset('images/IMG_8933.JPG') }}" alt="SMK Negeri 4" class="hero-bg-image">
+            <img src="{{ secure_asset('images/IMG_8933.JPG') }}" alt="SMK Negeri 4" class="hero-bg-image">
             <div class="hero-overlay"></div>
         </div>
         
@@ -164,7 +164,7 @@
             <div class="row">
                 <div class="col-lg-4">
                     <div class="footer-brand">
-                        <img src="{{ secure_secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="footer-logo">
+                        <img src="{{ secure_asset('images/logosmkn4.png') }}" alt="SMK Negeri 4" class="footer-logo">
                         <h4>SMK Negeri 4</h4>
                         <p>Excellence in Vocational Education</p>
                     </div>
